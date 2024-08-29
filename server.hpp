@@ -9,6 +9,12 @@
 #include <string>     // Para std::string
 #include <cstring>    // Para std::memset
 #include <unistd.h>   // Para close()
+#include <poll.h>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <sstream>
+#include "client.hpp"
 
 class Server {
 private:
@@ -17,14 +23,28 @@ private:
     int	socket_server_fd;      // Descriptor de archivo del socket del servidor
 		struct	sockaddr_in server_info; // Direccion del servidor
 		struct	sockaddr_in client_info; //Direccion del cliente
+		std::vector<struct pollfd> poll_fds;  // Vector para almacenar múltiples pollfd
+		// Mapa para rastrear clientes, clave es el fd del cliente
+		// Asocia el descriptor de archivo del cliente (client_fd, que es un int) 
+		// con un puntero a un objeto Client.
+		std::map<int, Client*> clients;
+
+		int	client_counter;  // Contador para asignar apodos únicos
 
 public:
     // Constructor
     Server(int port, const std::string& password);
+		void	run();  // Declaración de la función run()
+		void  serverLoop();  // Bucle principal que usa poll()
 		// Método para aceptar conexiones de clientes
-    void	acceptClient();
-
-    // Métodos adicionales se agregarán aquí conforme sean necesarios
+    void	acceptClient(); // Aceptar nuevas conexiones
+		void	handleClient(int client_fd);  // Manejar la comunicación con los clientes
+		void	removeClient(int client_fd);  // Eliminar clientes cuando se desconecten
+		void	handleCommand(int client_fd, const std::string& command); // Discernir que comando tenemos
+		std::map<int, Client*>& getClients();  // Obtener todos los clientes
+    Client* getClient(int client_fd);  // Obtener un cliente por su descriptor de archivo
+		// Enviar un mensaje a todos los clientes excep   to uno
+    void	broadcastMessage(const std::string& message, int exclude_fd);
 };
 
 #endif // SERVER_HPP
