@@ -6,7 +6,7 @@
 /*   By: frmurcia <frmurcia@42barcelona.com>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/29 11:52:40 by frmurcia          #+#    #+#             */
-/*   Updated: 2024/08/29 19:27:32 by frmurcia         ###   ########.fr       */
+/*   Updated: 2024/09/01 13:33:15 by frmurcia         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,14 +149,38 @@ void Server::acceptClient() {
 
 
 void Server::handleClient(int client_fd) {
-    char buffer[1024];
-    int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);  // Reducir en 1 para dejar espacio para '\0'
+    char	buffer[1024];
+    int		bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);  // Reducir en 1 para dejar espacio para '\0'
 
     if (bytes_received <= 0) {
         std::cerr << "Client (fd " << client_fd << ") closed the connection." << std::endl;
         close(client_fd);
         removeClient(client_fd);
+				return;
     }
+		buffer[bytes_received] = '\0';  // Agregar el terminador nulo al final de los datos recibidos
+		std::cout << "Received from client (fd " << client_fd << "): \"" << buffer << "\"" << std::endl;
+		Client* client = clients[client_fd];  // Obtener el cliente correspondiente al fd
+    client->appendToBuffer(buffer);  // Acumular la entrada en el buffer del cliente
+
+    std::string command;
+    // Procesar comandos completos (solo si hay '\r\n')
+    while (client->hasCompleteCommand(command)) {
+				std::cout << "Processing command: \"" << command << "\"" << std::endl;
+        handleCommand(client_fd, command);  // Procesar el comando completo
+    }
+
+		if (!client->getInputBuffer().empty()) {
+				std::cout << "Buffer incompleto esperando finalización con getInputBuffer().empty(): \"" << client->getInputBuffer() << "\"" << std::endl;
+		}
+    // Si todavía hay datos en el buffer pero sin '\r\n', espera más
+		if (client->isFinishedLine()) {
+				std::cout << "Buffer incompleto esperando finalización: " << client->getInputBuffer() << std::endl;
+				client->clearFinishedLine();  // Limpiar el estado para la próxima entrada
+    }
+
+
+		/*
 		buffer[bytes_received] = '\0';  // Agregar el terminador nulo al final de los datos recibidos
 		// Divide el buffer en líneas de comando
     std::string input(buffer); // convertimos buffer a una string
@@ -165,7 +189,7 @@ void Server::handleClient(int client_fd) {
     while (std::getline(ss, line)) {
         // Aquí procesas cada comando IRC
         handleCommand(client_fd, line);
-    }
+    }*/   //Parte cambiada para manejar el bufffer.
 }
 
 
@@ -200,12 +224,23 @@ void	Server::handleCommand(int client_fd, const std::string& command) {
     if (cmd == "NICK") {
         std::string new_nick;
         ss >> new_nick; // Obtener el nuevo apodo del comando
-        Command::handleNickCommand(*this, client_fd, new_nick);
+				if (!new_nick.empty()) { // Verificar que el nuevo apodo no esté vacio
+		        Command::handleNickCommand(*this, client_fd, new_nick);
+				}
+				else {
+						std::string error_msg = "ERROR: NICK command requires a nickname.\r\n";
+						send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+				}
     } else if (cmd == "JOIN") {
         Command::handleJoinCommand(*this, client_fd, ss); // Ajusta según la firma real
     } else if (cmd == "PRIVMSG") {
         Command::handlePrivmsgCommand(*this, client_fd, ss); // Ajusta según la firma real
     }
+		else {
+				std::string error_msg = "ERROR: Unknown or incomplete command.\r\n";
+				send(client_fd, error_msg.c_str(), error_msg.size(), 0);
+		}
+
     // Agregar más comandos según sea necesario
 }
 

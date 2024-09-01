@@ -4,7 +4,7 @@
 Client::Client(int fd) : client_fd(fd), nickname("Guest") {
 }
 
-std::string& Client::getInputBuffer() {
+const std::string& Client::getInputBuffer() const {
 		return (input_buffer);
 }
 
@@ -18,7 +18,7 @@ int	Client::getFd() const {
     return (client_fd);
 }
 
-std::string Client::getNickname() const {
+const std::string Client::getNickname() const {
 		return (nickname);
 }
 
@@ -29,23 +29,55 @@ void	Client::setNickname(const std::string& new_nick) {
 
 void	Client::appendToBuffer(const std::string& data) {
     input_buffer += data;
+		if (input_buffer.find("\r\n") != std::string::npos) {
+			finished_line = true;
+		}
 }
 
 bool	Client::hasCompleteCommand(std::string& command) {
-    size_t pos = input_buffer.find("\r\n");
-    if (pos != std::string::npos) {
-        command = input_buffer.substr(0, pos);
-        input_buffer.erase(0, pos + 2);  // Eliminar el comando del búfer
-        return true;
+		size_t pos = input_buffer.find("\r\n");
+		if (pos == std::string::npos) {
+				std::cout << "1: No \\r\\n encontrado, buscando solo \\n\n";
+				pos = input_buffer.find('\n');  // También buscar solo '\n'
+		}
+		if (pos != std::string::npos) {
+				std::cout << "2: Final de línea encontrado en la posición " << pos << "\n";
+				// Extraer el comando y eliminarlo del buffer
+				command = input_buffer.substr(0, pos);
+				input_buffer.erase(0, pos + 1);  // Eliminar el comando y el fin de línea del buffer
+				// Si el próximo carácter en el buffer es '\r', también lo eliminamos
+				if (!input_buffer.empty() && input_buffer[0] == '\r') {
+						input_buffer.erase(0, 1);
+						std::cout << "3: Eliminado '\\r' extra en el buffer.\n";
+				}
+				std::cout << "Command extracted: \"" << command << "\" for client " << client_fd << std::endl;
+				finished_line = false;
+				return (true);
+
     }
-    return false;
+		std::cout << "4: No se ha encontrado un comando completo aún en el buffer actual.\n";
+    return (false);
 }
 
+bool	Client::isFinishedLine() const {
+        return (finished_line);
+}
+
+void	Client::clearFinishedLine() {
+        finished_line = false;
+}
+
+void Client::clearBuffer() {
+		input_buffer.clear();
+		finished_line = false; 
+}
 
 // Destructor
 Client::~Client() {
-    // Cerrar el socket del cliente si es necesario
-    close(client_fd);
+		if (client_fd > 0) {
+			// Cerrar el socket del cliente si es necesario
+    	close(client_fd);
+		}
 }
 
 /**************
