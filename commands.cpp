@@ -47,10 +47,34 @@ void Command::handleNickCommand(Server& server, int client_fd, const std::string
 }
 
 void Command::handleJoinCommand(Server& server, int client_fd, std::istringstream& ss) {
-	(void)server;   // Esto es solo para evitar el warning por parámetro no utilizado
-    (void)client_fd;
-    (void)ss;
-    // Lógica para manejar el comando JOIN
+    std::string channel_name;
+    ss >> channel_name;
+    if (channel_name.empty()) {
+        server.sendMessage(client_fd, "ERROR: No channel specified.\n");
+        return;
+    }
+
+    // Verificar si el canal ya existe
+    Channel* channel = server.getChannel(channel_name);
+    if (!channel) {
+        // Crear nuevo canal
+        channel = new Channel(channel_name);
+        server.addChannel(channel);
+        server.sendMessage(client_fd, "Channel created: " + channel_name + "\n");
+    }
+		else {
+				// Verificar si el cliente ya está en el canal
+				Client* client = server.getClient(client_fd);
+				if (std::find(channel->getParticipants().begin(), channel->getParticipants().end(), client) != channel->getParticipants().end()) {
+						server.sendMessage(client_fd, "ERROR: Already in channel: " + channel_name + "\n");
+						return;
+				}
+		}
+
+    // Añadir cliente al canal
+    Client* client = server.getClient(client_fd);
+    channel->addParticipant(client);
+    server.sendMessage(client_fd, "Joined channel: " + channel_name + "\n");
 }
 
 void Command::handlePrivmsgCommand(Server& server, int client_fd, std::istringstream& ss) {

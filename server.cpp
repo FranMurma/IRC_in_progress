@@ -6,7 +6,7 @@
 /*   By: frmurcia <frmurcia@42barcelona.com>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/29 11:52:40 by frmurcia          #+#    #+#             */
-/*   Updated: 2024/09/01 13:33:15 by frmurcia         ###   ########.fr       */
+/*   Updated: 2024/09/01 18:48:58 by frmurcia         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -178,20 +178,7 @@ void Server::handleClient(int client_fd) {
 				std::cout << "Buffer incompleto esperando finalización: " << client->getInputBuffer() << std::endl;
 				client->clearFinishedLine();  // Limpiar el estado para la próxima entrada
     }
-
-
-		/*
-		buffer[bytes_received] = '\0';  // Agregar el terminador nulo al final de los datos recibidos
-		// Divide el buffer en líneas de comando
-    std::string input(buffer); // convertimos buffer a una string
-    std::istringstream ss(input);
-    std::string line;
-    while (std::getline(ss, line)) {
-        // Aquí procesas cada comando IRC
-        handleCommand(client_fd, line);
-    }*/   //Parte cambiada para manejar el bufffer.
 }
-
 
 
 void Server::removeClient(int client_fd) {
@@ -221,7 +208,7 @@ void	Server::handleCommand(int client_fd, const std::string& command) {
 		}// Usamos toupper() de cctype
 
 
-    if (cmd == "NICK") {
+    if (cmd == "/NICK") {
         std::string new_nick;
         ss >> new_nick; // Obtener el nuevo apodo del comando
 				if (!new_nick.empty()) { // Verificar que el nuevo apodo no esté vacio
@@ -231,9 +218,9 @@ void	Server::handleCommand(int client_fd, const std::string& command) {
 						std::string error_msg = "ERROR: NICK command requires a nickname.\r\n";
 						send(client_fd, error_msg.c_str(), error_msg.size(), 0);
 				}
-    } else if (cmd == "JOIN") {
+    } else if (cmd == "/JOIN") {
         Command::handleJoinCommand(*this, client_fd, ss); // Ajusta según la firma real
-    } else if (cmd == "PRIVMSG") {
+    } else if (cmd == "/PRIVMSG") {
         Command::handlePrivmsgCommand(*this, client_fd, ss); // Ajusta según la firma real
     }
 		else {
@@ -268,4 +255,19 @@ void	Server::broadcastMessage(const std::string& message, int exclude_fd) {
 		}
 }
 
+void	Server::sendMessage(int client_fd, const std::string& message) {
+		send(client_fd, message.c_str(), message.length(), 0);
+}
+
+
+Channel* Server::getChannel(const std::string& channel_name) {
+		if (channels.find(channel_name) != channels.end()) {
+				return (channels[channel_name]);
+		}
+		return (NULL);
+}
+
+void	Server::addChannel(Channel* channel) {
+		channels[channel->getName()] = channel;
+}
 

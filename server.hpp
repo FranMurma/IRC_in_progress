@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <sstream>
 #include "client.hpp"
+#include "channel.hpp"
 
 class Server {
 private:
@@ -28,8 +29,9 @@ private:
 		// Asocia el descriptor de archivo del cliente (client_fd, que es un int) 
 		// con un puntero a un objeto Client.
 		std::map<int, Client*> clients;
-
 		int	client_counter;  // Contador para asignar apodos únicos
+
+		std::map<std::string, Channel*> channels;
 
 public:
     // Constructor
@@ -45,6 +47,11 @@ public:
     Client* getClient(int client_fd);  // Obtener un cliente por su descriptor de archivo
 		// Enviar un mensaje a todos los clientes excep   to uno
     void	broadcastMessage(const std::string& message, int exclude_fd);
+
+		void	sendMessage(int client_fd, const std::string& message);
+
+		Channel* getChannel(const std::string& channel_name);
+		void	addChannel(Channel* channel);
 };
 
 #endif // SERVER_HPP

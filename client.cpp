@@ -41,15 +41,20 @@ bool	Client::hasCompleteCommand(std::string& command) {
 				pos = input_buffer.find('\n');  // También buscar solo '\n'
 		}
 		if (pos != std::string::npos) {
+				std::cout << "1: No \\r\\n encontrado, buscando solo \\n\n";
+				pos = input_buffer.find('\n');
+				if (pos != std::string::npos) {
+						// Ajustar para asegurarse de que \n se trate como \r\n
+						if (pos > 0 && input_buffer[pos - 1] == '\r') {
+								--pos;
+						}
+				}
+		}
+		if (pos != std::string::npos) {
 				std::cout << "2: Final de línea encontrado en la posición " << pos << "\n";
 				// Extraer el comando y eliminarlo del buffer
 				command = input_buffer.substr(0, pos);
-				input_buffer.erase(0, pos + 1);  // Eliminar el comando y el fin de línea del buffer
-				// Si el próximo carácter en el buffer es '\r', también lo eliminamos
-				if (!input_buffer.empty() && input_buffer[0] == '\r') {
-						input_buffer.erase(0, 1);
-						std::cout << "3: Eliminado '\\r' extra en el buffer.\n";
-				}
+				input_buffer.erase(0, pos + 2);  // Eliminar el comando y el fin de línea del buffer
 				std::cout << "Command extracted: \"" << command << "\" for client " << client_fd << std::endl;
 				finished_line = false;
 				return (true);
