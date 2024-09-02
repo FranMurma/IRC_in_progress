@@ -29,8 +29,8 @@ private:
 		// Asocia el descriptor de archivo del cliente (client_fd, que es un int) 
 		// con un puntero a un objeto Client.
 		std::map<int, Client*> clients;
-		int	client_counter;  // Contador para asignar apodos únicos
-
+		int		client_counter;  // Contador para asignar apodos únicos
+		void	changeToUniqueGuestNickname(Client* client);
 		std::map<std::string, Channel*> channels;
 
 public:
@@ -43,6 +43,10 @@ public:
 		void	handleClient(int client_fd);  // Manejar la comunicación con los clientes
 		void	removeClient(int client_fd);  // Eliminar clientes cuando se desconecten
 		void	handleCommand(int client_fd, const std::string& command); // Discernir que comando tenemos
+		void	handleUserCommand(Server& server, int client_fd, std::istringstream& ss);
+		void	sendWelcomeMessages(int client_fd, Client* client);
+
+
 		std::map<int, Client*>& getClients();  // Obtener todos los clientes
     Client* getClient(int client_fd);  // Obtener un cliente por su descriptor de archivo
 		// Enviar un mensaje a todos los clientes excep   to uno

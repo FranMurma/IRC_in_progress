@@ -1,8 +1,9 @@
 #include "client.hpp"
 
 // Constructor
-Client::Client(int fd) : client_fd(fd), nickname("Guest") {
+Client::Client(int fd) : client_fd(fd), nickname("frmurcia"),passReceived(false), nickReceived(false), userReceived(false) {
 }
+
 
 const std::string& Client::getInputBuffer() const {
 		return (input_buffer);
@@ -22,6 +23,7 @@ const std::string Client::getNickname() const {
 		return (nickname);
 }
 
+
 // Establecer un nuevo apodo
 void	Client::setNickname(const std::string& new_nick) {
 	nickname = new_nick;
@@ -34,14 +36,22 @@ void	Client::appendToBuffer(const std::string& data) {
 		}
 }
 
+bool	Client::isAuthenticated() const {
+		return (authenticated);
+}
+
+void	Client::setAuthenticated(bool status) {
+		authenticated = status;
+}
+
 bool	Client::hasCompleteCommand(std::string& command) {
 		size_t pos = input_buffer.find("\r\n");
 		if (pos == std::string::npos) {
-				std::cout << "1: No \\r\\n encontrado, buscando solo \\n\n";
+//				std::cout << "1: No \\r\\n encontrado, buscando solo \\n\n";
 				pos = input_buffer.find('\n');  // También buscar solo '\n'
 		}
 		if (pos != std::string::npos) {
-				std::cout << "1: No \\r\\n encontrado, buscando solo \\n\n";
+//			std::cout << "1: No \\r\\n encontrado, buscando solo \\n\n";
 				pos = input_buffer.find('\n');
 				if (pos != std::string::npos) {
 						// Ajustar para asegurarse de que \n se trate como \r\n
@@ -51,16 +61,16 @@ bool	Client::hasCompleteCommand(std::string& command) {
 				}
 		}
 		if (pos != std::string::npos) {
-				std::cout << "2: Final de línea encontrado en la posición " << pos << "\n";
+//				std::cout << "2: Final de línea encontrado en la posición " << pos << "\n";
 				// Extraer el comando y eliminarlo del buffer
 				command = input_buffer.substr(0, pos);
 				input_buffer.erase(0, pos + 2);  // Eliminar el comando y el fin de línea del buffer
-				std::cout << "Command extracted: \"" << command << "\" for client " << client_fd << std::endl;
+//				std::cout << "Command extracted: \"" << command << "\" for client " << client_fd << std::endl;
 				finished_line = false;
 				return (true);
 
     }
-		std::cout << "4: No se ha encontrado un comando completo aún en el buffer actual.\n";
+//		std::cout << "4: No se ha encontrado un comando completo aún en el buffer actual.\n";
     return (false);
 }
 
@@ -76,6 +86,38 @@ void Client::clearBuffer() {
 		input_buffer.clear();
 		finished_line = false; 
 }
+
+void	Client::setUsername(const std::string& user) {
+		username = user;
+}
+
+void	Client::setHostname(const std::string& host) {
+		hostname = host;
+}
+
+void	Client::setServername(const std::string& server) {
+		servername = server;
+}
+
+void	Client::setRealname(const std::string& real) {
+	realname = real;
+}
+
+bool	Client::hasReceivedWelcome() const {
+		return (received_welcome);
+}
+
+void	Client::setReceivedWelcome(bool value) {
+	received_welcome = value;
+}
+
+void	Client::setPassReceived(bool status) { passReceived = status; }
+bool	Client::getPassReceived() const { return passReceived; }
+void	Client::setNickReceived(bool status) { nickReceived = status; }
+bool	Client::getNickReceived() const { return nickReceived; }
+void	Client::setUserReceived(bool status) { userReceived = status; }
+bool	Client::getUserReceived() const { return userReceived; }
+
 
 // Destructor
 Client::~Client() {
