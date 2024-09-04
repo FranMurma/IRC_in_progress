@@ -1,61 +1,48 @@
+// server.hpp
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <iostream>   // Para std::cerr, std::cout
-#include <cstdlib>    // Para exit(), EXIT_FAILURE
-#include <cerrno>     // Para errno
-#include <sys/socket.h> // Para socket functions
-#include <arpa/inet.h>  // Para sockaddr_in y funciones de conversión de direcciones
-#include <string>     // Para std::string
-#include <cstring>    // Para std::memset
-#include <unistd.h>   // Para close()
-#include <poll.h>
-#include <vector>
+#include <string>
 #include <map>
-#include <algorithm>
-#include <sstream>
-#include "client.hpp"
-#include "channel.hpp"
+#include <vector>
+#include <poll.h>
 
 class Server {
-private:
-    int	port;                  // Número de puerto en el que el servidor escuchará
-    std::string password;      // Contraseña para la conexión
-    int	socket_server_fd;      // Descriptor de archivo del socket del servidor
-		struct	sockaddr_in server_info; // Direccion del servidor
-		struct	sockaddr_in client_info; //Direccion del cliente
-		std::vector<struct pollfd> poll_fds;  // Vector para almacenar múltiples pollfd
-		// Mapa para rastrear clientes, clave es el fd del cliente
-		// Asocia el descriptor de archivo del cliente (client_fd, que es un int) 
-		// con un puntero a un objeto Client.
-		std::map<int, Client*> clients;
-		int		client_counter;  // Contador para asignar apodos únicos
-		void	changeToUniqueGuestNickname(Client* client);
-		std::map<std::string, Channel*> channels;
+	private:
+		void	configureServer(int port, std::string password); //Constructor del servidor
+	    int		socket_fd;                 // Descriptor de archivo del socket del servidor
+	    int port;                                   // Puerto en el que el servidor escucha
+		std::string password;                              // Contraseña para autenticación
+    std::map<int, Client*> clients;                     // Mapa de clientes completos
+    std::map<int, ProvisionalClient*> provisional_clients; // Mapa de clientes provisionales
+    std::vector<pollfd> poll_fds;                       // Vector para manejar los pollfd
+    bool hexChatUserCreated;                            // Flag para verificar si el usuario de HexChat fue creado
+    int client_counter;                                 // Contador para asignar apodos únicos a los clientes
+
+    void setServer(int port, const std::string& password); // Configura el servidor
+    void acceptClient();                 // Acepta un nuevo cliente
+    void handleClient(int client_fd);    // Maneja la entrada del cliente
+    void removeClient(int client_fd);    // Elimina un cliente del servidor
+    void handleCommand(int client_fd, const std::string& command);  // Maneja los comandos recibidos
+    void sendMessage(int client_fd, const std::string& message);    // Envía un mensaje a un cliente
+
+    // Funciones para manejar comandos específicos
+    void handlePassCommand(int client_fd, std::istringstream& ss);
+    void handleNickCommand(int client_fd, std::istringstream& ss);
+    void handleUserCommand(int client_fd, std::istringstream& ss);
+
+    // Funciones auxiliares
+    void sendWelcomeMessages(int client_fd, Client* client);        // Envía los mensajes de bienvenida
+    Client* getClient(int client_fd);                               // Obtiene un cliente por su descriptor
+    Client* findClientByNickname(const std::string& nickname);      // Busca un cliente por su nickname
 
 public:
-    // Constructor
-    Server(int port, const std::string& password);
-		void	run();  // Declaración de la función run()
-		void  serverLoop();  // Bucle principal que usa poll()
-		// Método para aceptar conexiones de clientes
-    void	acceptClient(); // Aceptar nuevas conexiones
-		void	handleClient(int client_fd);  // Manejar la comunicación con los clientes
-		void	removeClient(int client_fd);  // Eliminar clientes cuando se desconecten
-		void	handleCommand(int client_fd, const std::string& command); // Discernir que comando tenemos
-		void	handleUserCommand(Server& server, int client_fd, std::istringstream& ss);
-		void	sendWelcomeMessages(int client_fd, Client* client);
+		void	configureServer(int port, std::string password); //Constructor del servidor
+    ~Server();                                      // Destructor del servidor
 
-
-		std::map<int, Client*>& getClients();  // Obtener todos los clientes
-    Client* getClient(int client_fd);  // Obtener un cliente por su descriptor de archivo
-		// Enviar un mensaje a todos los clientes excep   to uno
-    void	broadcastMessage(const std::string& message, int exclude_fd);
-
-		void	sendMessage(int client_fd, const std::string& message);
-
-		Channel* getChannel(const std::string& channel_name);
-		void	addChannel(Channel* channel);
+    void start();   // Inicia el servidor
+    void run();     // Corre el bucle principal del servidor
 };
 
 #endif // SERVER_HPP
+
