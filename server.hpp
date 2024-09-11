@@ -1,47 +1,52 @@
-// server.hpp
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
 #include <string>
-#include <map>
 #include <vector>
+#include <map>
 #include <poll.h>
 
+
+class Client;
+
 class Server {
-	private:
-		void	configureServer(int port, std::string password); //Constructor del servidor
-	    int		socket_fd;                 // Descriptor de archivo del socket del servidor
-	    int port;                                   // Puerto en el que el servidor escucha
-		std::string password;                              // Contraseña para autenticación
-    std::map<int, Client*> clients;                     // Mapa de clientes completos
-    std::map<int, ProvisionalClient*> provisional_clients; // Mapa de clientes provisionales
-    std::vector<pollfd> poll_fds;                       // Vector para manejar los pollfd
-    bool hexChatUserCreated;                            // Flag para verificar si el usuario de HexChat fue creado
-    int client_counter;                                 // Contador para asignar apodos únicos a los clientes
+private:
+    int socket_fd;
+    int port;
+    std::string password;
+    std::string serverName;
+    std::string serverTime;
+    std::vector<pollfd> poll_fds;
+    std::map<int, Client*> clients;
 
-    void setServer(int port, const std::string& password); // Configura el servidor
-    void acceptClient();                 // Acepta un nuevo cliente
-    void handleClient(int client_fd);    // Maneja la entrada del cliente
-    void removeClient(int client_fd);    // Elimina un cliente del servidor
-    void handleCommand(int client_fd, const std::string& command);  // Maneja los comandos recibidos
-    void sendMessage(int client_fd, const std::string& message);    // Envía un mensaje a un cliente
+    void setupSignalHandler();
+    void pollSockets();
+    void handlePollEvents();
+    void acceptClient();
+	void newClient(int client_fd);
+    void handleClient(int client_fd);
+    void handleWrite(int client_fd); // Añadido
+    void cleanup();
+    void setTime();
 
-    // Funciones para manejar comandos específicos
-    void handlePassCommand(int client_fd, std::istringstream& ss);
-    void handleNickCommand(int client_fd, std::istringstream& ss);
-    void handleUserCommand(int client_fd, std::istringstream& ss);
-
-    // Funciones auxiliares
-    void sendWelcomeMessages(int client_fd, Client* client);        // Envía los mensajes de bienvenida
-    Client* getClient(int client_fd);                               // Obtiene un cliente por su descriptor
-    Client* findClientByNickname(const std::string& nickname);      // Busca un cliente por su nickname
+    // Funciones de manejo de comandos
+    bool handlePassCommand(Client& client, const std::vector<std::string>& tokens);
+    bool handleUserCommand(Client& client, const std::vector<std::string>& tokens);
+    bool handlePingCommand(Client& client, const std::vector<std::string>& tokens);
 
 public:
-		void	configureServer(int port, std::string password); //Constructor del servidor
-    ~Server();                                      // Destructor del servidor
+    Server(); // Constructor sin parámetros
+    void start();
+    void run();
+	void configureServer(int port, std::string password);
+	std::string getTime() const;
+	void sendResponse(int client_fd, const std::string& message);
+	std::string getServerName() const;
+	std::string getPassword() const;
+	void broadcastMessage(const std::string& message);
 
-    void start();   // Inicia el servidor
-    void run();     // Corre el bucle principal del servidor
+
+
 };
 
 #endif // SERVER_HPP
