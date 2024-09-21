@@ -6,7 +6,7 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
 # Archivos fuente y objetos
-SRCS = main.cpp server.cpp client.cpp socketUtils.cpp utils.cpp commands.cpp nickCommand.cpp userCommand.cpp passCommand.cpp
+SRCS = main.cpp server.cpp client.cpp socketUtils.cpp utils.cpp commands.cpp nickCommand.cpp userCommand.cpp passCommand.cpp joinCommand.cpp channel.cpp pingCommand.cpp pongCommand.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 

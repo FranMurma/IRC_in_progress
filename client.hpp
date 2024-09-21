@@ -13,8 +13,9 @@ private:
     std::string username;          // Username del cliente
     std::string realname;          // Realname del cliente
 	std::string hostname;		   // hostname del cliente (lo usaremos mucho como referencia)
-    bool authenticated;            // Estado de autenticación del cliente
-    bool registered;               // Indica si el cliente ha completado la autenticación
+    bool	authenticated;            // Estado de autenticación del cliente
+    bool	registered;               // Indica si el cliente ha completado la autenticación
+	bool    received_welcome;
     std::string buffer;            // Buffer para datos entrantes, manejar datos parciales
 
 public:
@@ -27,16 +28,21 @@ public:
     const std::string& getUsername() const;
     const std::string& getRealname() const;
 	const std::string& getHostname() const;
-    bool isAuthenticated() const;
-    bool isRegistered() const;
-	bool getHasPassword() const;
+    bool	isAuthenticated() const;
+    bool	isRegistered() const;
+	bool	isFullyRegistered() const;
+	bool	canBeRegistered() const;
 
-    void setNickname(const std::string& nick);
-    void setUsername(const std::string& user);
-    void setRealname(const std::string& real);
-	void setHostname(const std::string& hostname);
-    void setAuthenticated(bool state);
-    void setRegistered(bool state);
+	bool	getHasPassword() const;
+
+    void	setNickname(const std::string& nick);
+    void	setUsername(const std::string& user);
+    void	setRealname(const std::string& real);
+	void	setHostname(const std::string& hostname);
+    void	setAuthenticated(bool state);
+    void	setRegistered(bool state);
+	void	setReceivedWelcome(bool status);
+	bool	hasReceivedWelcome() const;
 
     // Manejo de datos y comandos
 	bool receiveData(Server& server);

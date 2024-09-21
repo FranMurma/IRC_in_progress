@@ -8,7 +8,7 @@
 #include <cstring> // Para manejo de cadenas
 
 // Constructor: inicializa el descriptor de archivo y los estados
-Client::Client(int fd) : socket_fd(fd), authenticated(false), registered(false), buffer("") {}
+Client::Client(int fd) : socket_fd(fd), authenticated(false), registered(false), received_welcome(false), buffer("") {}
 
 // Getters
 int Client::getSocketFD() const {
@@ -41,6 +41,13 @@ bool Client::isRegistered() const {
     return registered;
 }
 
+bool Client::isFullyRegistered() const {
+	return (isAuthenticated() && !getNickname().empty() && !getUsername().empty());
+}
+
+bool Client::canBeRegistered() const {
+	return (!nickname.empty() && !username.empty() && isAuthenticated());
+}
 // Setters
 void Client::setNickname(const std::string& nick) {
     nickname = nick;
@@ -64,6 +71,14 @@ void Client::setAuthenticated(bool state) {
 
 void Client::setRegistered(bool state) {
     registered = state;
+}
+
+void	Client::setReceivedWelcome(bool status) {
+	received_welcome = status;
+}
+
+bool	Client::hasReceivedWelcome() const {
+	return (received_welcome);
 }
 
 

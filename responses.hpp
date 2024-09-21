@@ -32,7 +32,7 @@
 #define RPL_TOPIC(servername, channel, topic) (std::string(":" + servername + " 332 " + channel + " :" + topic))
 #define RPL_NAMREPLY(servername, nickname, channel, clientlist) \
     (std::string(":" + servername + " 353 " + nickname + " = " + channel + " :" + clientlist))
-#define RPL_ENDOFNAMES(channel) (std::string("366 : End of /NAMES list " + channel))
+#define RPL_ENDOFNAMES(nickname, channel) (std::string(":" + server.getServerName() + " 366 " + nickname + " " + channel + " :End of /NAMES list"))
 
 // PRIVMSG
 #define ERR_NORECIPIENT(servername) (std::string(":" + servername + " 411 :No recipient given (PRIVMSG)"))

@@ -16,14 +16,9 @@ std::string convertToCRLF(const std::string& input);
 // Declaración de la función splitString
 std::vector<std::string> splitString(const std::string& input, const std::string& delimiter);
 
-bool processCommand(const std::string& command, int client_fd, Server& server);
-
 //bool isNicknameInUse(const std::string& nickname);
 bool isUserOrChannelExists(const std::string& target);
 
-bool isValidNickname(const std::string& nickname);
-
-bool isNicknameInUse(const std::string& nickname);
 
 #endif // UTILS_HPP
 

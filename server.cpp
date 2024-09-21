@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -13,6 +14,7 @@
 #include "socketUtils.hpp"
 #include "utils.hpp"
 #include "client.hpp"
+#include "channel.hpp"
 
 //Volatile para que no cachee sino que la consulte siempre
 //sig_atomic_t tipo de C y CPP para variables que pueden modificadarse en un manejador de señales,
@@ -59,7 +61,7 @@ std::string Server::getTime() const {
 
 
 Server::Server(void) {
-	this->serverName = "frmurcia";
+	this->serverName = "MyIRCserver";
 	this->setTime();
 }
 
@@ -87,8 +89,15 @@ void	Server::configureServer(int port, std::string password) {
 	setupSignalHandler();      // Configurar el manejador de señales
 }
 
-
-
+Server::~Server() {
+    // Liberar memoria de los canales
+	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
+	if (it->second != NULL) {
+        delete it->second;
+        it->second = NULL;  // Asegúrate de poner a nullptr después de liberar
+		}
+    }
+}
 
 void Server::run() {
     setupSignalHandler();  // Configurar el manejador de señales
@@ -224,6 +233,12 @@ void Server::sendResponse(int client_fd, const std::string& response) {
 void Server::sendResponse(int client_fd, const std::string& response) {
     std::string response_with_crlf = convertToCRLF(response); // Asegura \r\n
     std::cout << "Sending to client (fd " << client_fd << "): [" << response_with_crlf << "]" << std::endl;  // Depuración
+																						std::cout << "Hex dump: ";
+																						for (size_t i = 0; i < response_with_crlf.size(); ++i) {
+																							printf("%02x ", (unsigned char)response_with_crlf[i]);
+    }
+    std::cout << std::endl;
+
 
     if (send(client_fd, response_with_crlf.c_str(), response_with_crlf.size(), 0) == -1) {
         std::cerr << "Error: Failed to send response to client (fd " << client_fd << ")." << std::endl;
@@ -236,10 +251,43 @@ void Server::sendResponse(int client_fd, const std::string& response) {
 
 
 
-void Server::broadcastMessage(const std::string& message) {
-    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
-        it->second->sendResponse(message);  // Enviar el mensaje a cada cliente
-    }
+void	Server::broadcastMessage(const std::string& message, 
+			const std::set<int>& include_fds = std::set<int>(), 
+			const std::set<int>& exclude_fds = std::set<int>()) {
+        // Si include_fds está vacío, enviaremos a todos los clientes.
+	if (include_fds.empty()) {
+		for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
+			int fd = it->first;
+			// Si fd no está en exclude_fds, enviamos el mensaje.
+			if (exclude_fds.find(fd) == exclude_fds.end()) {
+				sendResponse(fd, message);
+			}
+		}
+	}
+	else {
+		// Si include_fds no está vacío, solo enviamos a esos fds.
+		for (std::set<int>::const_iterator it = include_fds.begin(); it != include_fds.end(); ++it) {
+			int fd = *it;
+			// Si fd no está en exclude_fds, enviamos el mensaje.
+			if (exclude_fds.find(fd) == exclude_fds.end()) {
+				sendResponse(fd, message);
+			}
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+const std::map<int, Client*>& Server::getClients() const {
+	return (clients); // Suponiendo que 'clients' es el nombre de la variable que almacena los clientes.
 }
 
 void Server::cleanup() {
@@ -257,12 +305,40 @@ void Server::cleanup() {
     }
     clients.clear();
 
+	// Liberar memoria de los canales y limpiar el mapa
+	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
+		delete it->second;
+		std::cout << "Borrando canales y mapa\n";
+		channels.clear();
+	}
+
     // Cerrar el socket del servidor
     close(socket_fd);
-    std::cout << "Server shutdown completed." << std::endl;
+   	std::cout << "Server shutdown completed." << std::endl;
 }
+
 
 std::string Server::getPassword() const {
     return password; // Devuelve la contraseña almacenada en la clase Server
+}
+
+Channel* Server::getChannel(const std::string& channel_name) {
+    std::map<std::string, Channel*>::iterator it = channels.find(channel_name);
+    if (it != channels.end()) {
+        return it->second;
+    }
+    return NULL; // Retorna NULL si el canal no existe
+}
+
+void	Server::addChannel(Channel* channel) {
+    channels[channel->getName()] = channel; // Añade el canal al mapa
+}
+
+void	Server::sendPing(Client& client) {
+	// Crea el mensaje PING
+	std::string pingMsg = "PING :" + getServerName();
+	//Envia el mensaje PING al cliente
+	std::cout << "Enviando PING al cliente " << client.getNickname() << std::endl;  // Depuración
+	sendResponse(client.getSocketFD(), pingMsg);
 }
 

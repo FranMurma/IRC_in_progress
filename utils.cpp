@@ -42,7 +42,7 @@ bool	is_valid_port(const char* argument) {
 // Funcion para convertir los \n a \r\n
 std::string convertToCRLF(const std::string& input) {
     std::string result;
-    result.reserve(input.size());  // Reservar espacio para evitar múltiples realocaciones
+    result.reserve(input.size() + 2);  // Reservar espacio para evitar múltiples realocaciones
     for (size_t i = 0; i < input.size(); ++i) {
         if (input[i] == '\n') {
             if (i == 0 || input[i - 1] != '\r') {
@@ -51,7 +51,10 @@ std::string convertToCRLF(const std::string& input) {
         }
         result += input[i];  // Añadir el carácter actual
     }
-	std::cout << "Aplicamos CRLF" << std::endl;
+	// Verificar si el resultado termina con \r\n, si no, añadirlo
+	if (result.empty() || result[result.size() - 1] != '\n' || (result.size() > 1 && result[result.size() - 2] != '\r')) {
+		result += "\r\n";
+    }
     return result;
 }
 
@@ -78,114 +81,8 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
 }
 
 
-// Implementación de processCommand
-bool processCommand(const std::string& command, int client_fd, Server& server) {
-    std::vector<std::string> tokens = splitString(command, " ");
-    if (tokens.empty()) return false;
-
-    std::string commandName = tokens[0];
-    
-    // Imprimir el comando recibido
-    std::cout << "Received command: " << command << std::endl;
-    std::cout << "Hex dump: ";
-    for (size_t i = 0; i < command.size(); ++i) {
-        char c = command[i];
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)c << " ";
-    }
-    std::cout << std::endl;
-
-    if (commandName == "CAP") {
-        if (tokens.size() >= 2 && tokens[1] == "LS") {
-            server.sendResponse(client_fd, "CAP * LS :multi-prefix");
-        } else {
-			server.sendResponse(client_fd, "CAP * NAK");
-        }
-        return true;
-    }
-
-    if (validCommands.find(commandName) == validCommands.end()) {
-        server.sendResponse(client_fd, "421 ERR_UNKNOWNCOMMAND :Unknown command");
-        return true;
-    }
-
-    if (commandName == "PASS") {
-        if (tokens.size() < 2) {
-            server.sendResponse(client_fd, ERR_NEEDMOREPARAMS("PASS"));
-            return true;
-        }
-        server.sendResponse(client_fd, "NOTICE * :Password accepted");
-        return true;
-
-
-		
-    } else if (commandName == "NICK") {
-        if (tokens.size() < 2) {
-            server.sendResponse(client_fd, ERR_NONICKNAMEGIVEN());
-            return true;
-        }
-		std::string nickname = tokens[1];
-		// Verificar si el nickname es válido
-		if (!isValidNickname(nickname)) { // Esta función FALTA!!!
-        server.sendResponse(client_fd, ERR_ERRONEUSNICKNAME(nickname));
-        return true;
-		}
-		// Verifica si el nickname está en uso
-		if (isNicknameInUse(nickname)) {
-			server.sendResponse(client_fd, ERR_NICKNAMEINUSE(nickname));
-			return (true);
-		}
-		server.sendResponse(client_fd, "NOTICE * :Nickname set to " + nickname);
-        return true;
-
-
-
-    } else if (commandName == "USER") {
-        if (tokens.size() < 5) {
-            server.sendResponse(client_fd, "461 ERR_NEEDMOREPARAMS :Not enough parameters for USER");
-            return true;
-        }
-        // Completar la autenticación y enviar las respuestas necesarias
-        std::string nick = tokens[1]; // Usar el nickname almacenado si es necesario
-        server.sendResponse(client_fd, "001 " + nick + " :Welcome to the IRC server");
-        server.sendResponse(client_fd, "002 " + nick + " :Your host is fran_server, running version 1.0");
-        server.sendResponse(client_fd, "003 " + nick + " :This server was created now");
-        server.sendResponse(client_fd, "004 " + nick + " fran_server 1.0 iowghraAsORTVS");
-        return true;
-    }
-
-    // Otros comandos se manejan aquí
-
-    return false; // Para cualquier texto no comando o desconocido
-}
-
-bool isValidNickname(const std::string& nickname) {
-    std::string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-[]\\`^{}|_";
-    return !nickname.empty() && nickname.find_first_not_of(validChars) == std::string::npos;
-}
-
-bool isNicknameInUse(const std::string& nickname) {
-    (void)nickname; // Para evitar la advertencia de parámetro no usado
-    // Lógica para verificar si el nickname está en uso
-    return false;
-}
-
 
 /************************
-// Función auxiliar para enviar respuestas al cliente
-void sendResponse(int client_fd, const std::string& response) {
-    std::string response_with_crlf = convertToCRLF(response); // Asegura \r\n
-    if (send(client_fd, response_with_crlf.c_str(), response_with_crlf.size(), 0) == -1) {
-        std::cout << "Error: Failed to send response to client." << std::endl;
-    }
-}
-
-
-// Funciones adicionales para verificar estado de nicknames y usuarios (ejemplos)
-bool isNicknameInUse(const std::string& nickname) {
-	(void)nickname; // Para evitar la advertencia de parámetro no usado
-    // Lógica para verificar si el nickname está en uso
-    return false;
-}
 *****************/
 
 bool isUserOrChannelExists(const std::string& target) {
