@@ -7,6 +7,6 @@
 #include <iostream>
 
 
-void handlePongCommand(Client& client, const std::vector<std::string>& tokens, Server& server);
+void	handlePongCommand(const std::vector<std::string>& tokens);
 
 #endif

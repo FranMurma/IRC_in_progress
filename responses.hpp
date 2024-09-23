@@ -74,6 +74,7 @@
 
 // GENERAL
 #define ERR_UNKNOWNCOMMAND(command) (std::string("421 " + command + " :Unknown command"))
+#define ERR_NOTREGISTERED() (std::string("451 :You have not registered"))  // Error si mandamos algo sin estar registrados
 
 #endif // RESPONSES_HPP
 

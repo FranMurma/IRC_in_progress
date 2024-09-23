@@ -53,6 +53,8 @@ public:
 	Channel* getChannel(const std::string& channel_name);
 	void addChannel(Channel* channel);
 	void    sendPing(Client& client);
+	std::vector<Client*> getChannelUsers(const std::string& channelName);
+
 	~Server();
 
 

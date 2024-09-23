@@ -11,9 +11,17 @@
 #include "joinCommand.hpp"
 #include "pingCommand.hpp"
 #include "pongCommand.hpp"
+#include "whoCommand.hpp"
+
+bool	requireRegistration(Client& client, Server& server) {
+	if (!client.isFullyRegistered()) {
+		server.sendResponse(client.getSocketFD(), ERR_NOTREGISTERED()); // Cliente no registrado
+		return (false);
+	}
+	return (true);
+}
 
 bool	processCommand(const std::string& command, Client& client, Server& server) {
-	std::cout << "Cliente recibido: " << command << std::endl;
 	std::vector<std::string> tokens = splitString(command, " ");
     if (tokens.empty())
 		return (false);
@@ -21,23 +29,45 @@ bool	processCommand(const std::string& command, Client& client, Server& server) 
     std::string commandName = tokens[0];
 
     if (commandName == "NICK") {
+		std::cout << "-----------------------------" << std::endl;
         std::cout << "Processing NICK command: " << command << std::endl;
+		std::cout << "-----------------------------" << std::endl;
         handleNickCommand(client, tokens, server);
     } else if (commandName == "PASS") {
+		std::cout << "-----------------------------" << std::endl;
         std::cout << "Processing PASS command: " << command << std::endl;
+		std::cout << "-----------------------------" << std::endl;
         handlePassCommand(client, tokens, server);
     } else if (commandName == "USER") {
+		std::cout << "-----------------------------" << std::endl;
         std::cout << "Processing USER command: " << command << std::endl;
+		std::cout << "-----------------------------" << std::endl;
         handleUserCommand(client, tokens, server);
-    } else if (commandName == "JOIN") {
-		std::cout << "Processing JOIN command: " << command << std::endl;
-		handleJoinCommand(client, tokens, server);
 	}
-	else if (commandName == "PING") {
-		handlePingCommand(client, tokens, server);
-	}
-	else if (commandName == "PONG") {
-		handlePongCommand(client, tokens, server);
+	else {
+		if (!requireRegistration(client, server))
+			return (false);
+
+		if (commandName == "JOIN") {
+			std::cout << "-----------------------------" << std::endl;
+			std::cout << "Processing JOIN command: " << command << std::endl;
+			std::cout << "-----------------------------" << std::endl;
+			handleJoinCommand(client, tokens, server);
+			}
+		else if (commandName == "PING") {
+			handlePingCommand(client, tokens, server);
+			}
+		else if (commandName == "PONG") {
+			handlePongCommand(tokens);
+			}
+		else if (commandName == "WHO") {
+			if (tokens.size() > 1) {
+				std::cout << "-----------------------------" << std::endl;
+				std::cout << "Processing WHO command: " << command << std::endl;
+				std::cout << "-----------------------------" << std::endl;
+				handleWhoCommand(client, tokens[1], server);
+				}
+		}
 	}
 	return (true);
 }

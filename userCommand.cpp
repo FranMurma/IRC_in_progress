@@ -16,7 +16,7 @@ bool handleUserCommand(Client& client, const std::vector<std::string>& tokens, S
     client.setRealname(tokens[4]);
 
     // Configurar el hostname, en este caso usando una IP fija como ejemplo
-    std::string hostname = tokens[1] + "@127.0.0.1";
+    std::string hostname = "127.0.0.1";
     client.setHostname(hostname);
 
     // Verificar si el cliente está completamente registrado

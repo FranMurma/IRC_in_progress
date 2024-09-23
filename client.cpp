@@ -107,7 +107,6 @@ bool Client::receiveData(Server &server) {
     size_t pos;
     while ((pos = buffer.find("\r\n")) != std::string::npos) {
         std::string command = buffer.substr(0, pos);
-		std::cout << "Received command: " << command << std::endl;
 		processCommand(command, *this, server);
         buffer.erase(0, pos + 2);
     }

@@ -89,21 +89,30 @@ void	Server::configureServer(int port, std::string password) {
 	setupSignalHandler();      // Configurar el manejador de señales
 }
 
-Server::~Server() {
-    // Liberar memoria de los canales
+
+Server::~Server() {};
+
+/*	// Liberar memoria de los canales
 	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
 	if (it->second != NULL) {
         delete it->second;
-        it->second = NULL;  // Asegúrate de poner a nullptr después de liberar
+        it->second = NULL;  // Ponemos NULL después de liberar
 		}
     }
 }
+*/
 
-void Server::run() {
-    setupSignalHandler();  // Configurar el manejador de señales
+void	Server::run() {
+	setupSignalHandler();  // Configurar el manejador de señales
 
-    while (!stop_server) {  // Repetir mientras no se haya recibido la señal de interrupción
-        std::cout << "Currently monitoring " << (poll_fds.size() - 1) << " clients." << std::endl;
+	int prevClientCount = poll_fds.size() - 1;
+
+	while (!stop_server) {  // Repetir mientras no se haya recibido la señal de interrupción
+		int currentClientCount = poll_fds.size() - 1;
+		if (prevClientCount != currentClientCount) {
+			std::cout << "Currently monitoring " << currentClientCount << " clients." << std::endl;
+			prevClientCount = currentClientCount;
+		}
         pollSockets();  // Realizar poll para supervisar los sockets
         handlePollEvents();  // Manejar los eventos de poll
     }
@@ -165,13 +174,6 @@ void Server::acceptClient() {
 
     // Crear un nuevo cliente
 	newClient(client_fd);
-
-/*    Client* new_client = new Client(client_fd);
-    clients[client_fd] = new_client;
-
-    // Añadir el nuevo cliente a los descriptores supervisados por poll
-    addPollFd(poll_fds, client_fd, POLLIN);
-    std::cout << "New client connected: " << client_fd << std::endl;*/
 }
 
 // Función para gestionar un nuevo cliente
@@ -216,34 +218,17 @@ std::string Server::getServerName() const {
 // Manejar la escritura de datos a los clientes (placeholder, por si se necesita)
 void Server::handleWrite(int client_fd) {
 	(void)client_fd; // Evitar la advertencia de parámetro no usado
-    // Aquí puedes manejar la lógica de escritura si se requiere en el futuro
+    // Aquí podemos manejar la lógica de escritura si se requiere en el futuro
 }
 
-/*
-void Server::sendResponse(int client_fd, const std::string& response) {
-    std::string response_with_crlf = convertToCRLF(response); // Asegura \r\n
-    if (send(client_fd, response_with_crlf.c_str(), response_with_crlf.size(), 0) == -1) {
-        std::cout << "Error: Failed to send response to client." << std::endl;
-    }
-}*/
-
 
 
 
 void Server::sendResponse(int client_fd, const std::string& response) {
     std::string response_with_crlf = convertToCRLF(response); // Asegura \r\n
-    std::cout << "Sending to client (fd " << client_fd << "): [" << response_with_crlf << "]" << std::endl;  // Depuración
-																						std::cout << "Hex dump: ";
-																						for (size_t i = 0; i < response_with_crlf.size(); ++i) {
-																							printf("%02x ", (unsigned char)response_with_crlf[i]);
-    }
-    std::cout << std::endl;
-
 
     if (send(client_fd, response_with_crlf.c_str(), response_with_crlf.size(), 0) == -1) {
         std::cerr << "Error: Failed to send response to client (fd " << client_fd << ")." << std::endl;
-    } else {
-        std::cout << "Response sent successfully to client (fd " << client_fd << ")." << std::endl;
     }
 }
 
@@ -287,7 +272,7 @@ void	Server::broadcastMessage(const std::string& message,
 
 
 const std::map<int, Client*>& Server::getClients() const {
-	return (clients); // Suponiendo que 'clients' es el nombre de la variable que almacena los clientes.
+	return (clients); // 'clients' es el nombre de la variable que almacena los clientes.
 }
 
 void Server::cleanup() {
@@ -308,10 +293,9 @@ void Server::cleanup() {
 	// Liberar memoria de los canales y limpiar el mapa
 	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
 		delete it->second;
-		std::cout << "Borrando canales y mapa\n";
-		channels.clear();
+		it->second = NULL;
+		std::cout << "Erasing channel: " << it->first << std::endl;
 	}
-
     // Cerrar el socket del servidor
     close(socket_fd);
    	std::cout << "Server shutdown completed." << std::endl;
@@ -319,7 +303,7 @@ void Server::cleanup() {
 
 
 std::string Server::getPassword() const {
-    return password; // Devuelve la contraseña almacenada en la clase Server
+	return (password); // Devuelve la contraseña almacenada en la clase Server
 }
 
 Channel* Server::getChannel(const std::string& channel_name) {
@@ -338,7 +322,14 @@ void	Server::sendPing(Client& client) {
 	// Crea el mensaje PING
 	std::string pingMsg = "PING :" + getServerName();
 	//Envia el mensaje PING al cliente
-	std::cout << "Enviando PING al cliente " << client.getNickname() << std::endl;  // Depuración
 	sendResponse(client.getSocketFD(), pingMsg);
+}
+
+std::vector<Client*> Server::getChannelUsers(const std::string& channelName) {
+    Channel* channel = getChannel(channelName);
+    if (channel) {
+        return (channel->getParticipants());  // Retorna los usuarios del canal si existe
+    }
+    return std::vector<Client*>();  // Si el canal no existe, devuelve un vector vacío
 }
 
